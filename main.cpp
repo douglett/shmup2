@@ -9,9 +9,9 @@ void buffertest2() {
 	gfx.init();
 	gfx.resizable();
 	gfx.usebuffer(160, 160);
-	gfx.loadtexture("sprites", "../wizzardquest4/assets/sprites.png");
+	gfx.loadtexture("sprites", "assets/sprites.png");
 	Sprite s;
-	s.tsource("sprites", 16, 2);
+	s.tsource("sprites", 16, 0);
 	s.x = s.y = 20;
 
 	while (!gfx.shouldquit()) {
