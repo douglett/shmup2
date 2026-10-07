@@ -1,5 +1,5 @@
 #include <iostream>
-#include "gfx/gfx.hpp"
+#include "gfxlib/gfx.hpp"
 using namespace std;
 
 // define globals
