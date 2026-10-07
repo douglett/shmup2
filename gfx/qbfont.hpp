@@ -10,7 +10,7 @@ struct QBFont {
 	struct Font   { int texw, texh, charw, charh; Texture2D texture={0}; };
 	static const Font_t qb1_t, qb13_t;
 	Font qb1, qb13;
-	int selectedid = 13;
+	int selected = 13;
 
 	// init
 	int init() {
@@ -48,7 +48,7 @@ struct QBFont {
 
 	// print functions
 	const Font& font() {
-		switch (selectedid) {
+		switch (selected) {
 			case 1:   return qb1;
 			case 13:
 			default:  return qb13;

@@ -36,6 +36,8 @@ struct GFX {
 		buffer.init(width, height, scale);
 	}
 	static void begin()   {
+		if ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER))
+			fullscreen();
 		BeginDrawing();
 		ClearBackground(bgcolor);
 		if (buffer.valid())
@@ -44,12 +46,13 @@ struct GFX {
 	}
 	static void flip() {
 		EndTextureMode();
-		if (flag_fps) {
-			string s = to_string(GetFPS());
-			print(s, GetScreenWidth()-font.width(s)-2, 2, GREEN);
-		}
 		if (buffer.valid())
 			buffer.paint(0, 0);
+		if (flag_fps) {
+			string s = to_string(GetFPS());
+			font.selected = 13;
+			print(s, GetScreenWidth()-font.width(s)-2, 2, GREEN);
+		}
 		EndDrawing();  // flip
 		begin();  // begin drawing mode for next frame
 	}

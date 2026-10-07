@@ -8,7 +8,7 @@ using namespace std;
 struct Paintable {
 	using ptr = shared_ptr<Paintable>;
 	string id;
-	int x = 0, y = 0, z = 0;
+	float x = 0, y = 0; int z = 0;
 	virtual void paint (int offx, int offy) {}
 	virtual void update() {}
 };
