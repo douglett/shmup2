@@ -1,10 +1,12 @@
-#include <iostream>
 #include "gfxlib/gfx.hpp"
+#include <iostream>
+#include <cmath>
 using namespace std;
 
 // define globals
-GFX gfx;
 const int screenw = 160, screenh = 160;
+const Color PAL_BLACK = { 16, 8, 32, 255 };
+GFX gfx;
 Container scene;
 
 struct Score {
@@ -84,6 +86,27 @@ struct Enemys {
 	}
 } enemys;
 
+struct Stars : Paintable {
+	const float SPEED = 0.5;
+	vector<Vector2> stars;
+
+	Stars() {
+		id = "stars", z = -100;
+		srand(100);
+		for (int i = 0; i < 50; i++)
+			stars.push_back({ float(rand() % screenw), float(rand() % screenh) });
+	}
+	// manual update - no updating in container
+	void update() {
+		for (auto& star : stars)
+			star.y = fmod(star.y + SPEED, screenh);
+	}
+	virtual void paint(int xoff, int yoff) {
+		for (const auto& star : stars)
+			DrawPixel(xoff+x+star.x, yoff+y+star.y, WHITE);
+	}
+};
+
 void buffertest2() {
 	gfx.init(screenw*4, screenh*4);
 	gfx.resizable();
@@ -92,16 +115,19 @@ void buffertest2() {
 	gfx.loadtexture("sprites", "assets/sprites.png");
 	auto shipptr = make_shared<Sprite>();
 	auto& ship = *shipptr;
-	ship.tsource("sprites", 16, 0);
-	ship.x = (screenw - ship.width) / 2;
-	ship.y = screenh - ship.height - 6;
-	scene.append(shipptr);
+		ship.tsource("sprites", 16, 0);
+		ship.id = "ship";
+		ship.x = (screenw - ship.width) / 2;
+		ship.y = screenh - ship.height - 6;
+		scene.append(shipptr);
 	float speed = 1.5;
 
+	auto starsptr = make_shared<Stars>();
+	auto& stars = *starsptr;
+		scene.append(starsptr);
+
 	while (!gfx.shouldquit()) {
-		ClearBackground(SKYBLUE);
-		// DrawRectangle(0, 0, 20, 20, RED);
-		// DrawCircle(10, 10, 5, MAROON);
+		ClearBackground(PAL_BLACK);
 
 		// move player
 		if (IsKeyDown(KEY_LEFT))
@@ -112,6 +138,7 @@ void buffertest2() {
 			bullets.shoot(ship.x+4, ship.y-9);
 
 		// move actors
+		stars.update();
 		bullets.update();
 		enemys.update();
 
