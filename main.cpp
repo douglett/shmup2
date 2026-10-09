@@ -4,7 +4,7 @@
 using namespace std;
 
 // define constants
-const int screenw = 160, screenh = 160;
+const int screenw = 160, screenh = 240;
 const Color PAL_BLACK = { 16, 8, 32, 255 };
 const int
 	Z_STARS         = -100,
@@ -77,12 +77,11 @@ struct Bullets {
 		cooldown = max(cooldown-1, 0);
 		for (size_t i = 0; i < scene.children.size(); i++) {  // no iterator, since we are modifying scene.children
 			if (scene.children[i]->id != "bullet")  continue;
-			auto p = dynamic_pointer_cast<Sprite>(scene.children[i]);  // hold ptr
-			auto& spr = *p;
+			auto& spr = *dynamic_pointer_cast<Sprite>(scene.children[i]);
 			// check collision with enemy
-			for (auto p : scene.children) {
-				if (p->id != "saucer")  continue;
-				auto& spr2 = *dynamic_pointer_cast<Sprite>(p);
+			for (size_t j = 0; j < scene.children.size(); j++) {
+				if (scene.children[j]->id != "saucer")  continue;
+				auto& spr2 = *dynamic_pointer_cast<Sprite>(scene.children[j]);
 				if (spr.collide(spr2)) {
 					score.add(SCORE_SAUCER);
 					spr.id = spr2.id = "dead";
@@ -132,7 +131,7 @@ struct Stars : Paintable {
 
 	Stars() {
 		id = "stars", z = Z_STARS;
-		srand(100);
+		srand(101);
 		for (int i = 0; i < 50; i++)
 			stars.push_back({ float(rand() % screenw), float(rand() % screenh) });
 	}
