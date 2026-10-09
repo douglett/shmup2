@@ -3,31 +3,41 @@
 #include <cmath>
 using namespace std;
 
-// define globals
+// define constants
 const int screenw = 160, screenh = 160;
 const Color PAL_BLACK = { 16, 8, 32, 255 };
+const int
+	Z_STARS         = -100,
+	Z_EXPLOSION     = 10,
+	Z_ENEMY         = 20,
+	Z_BULLET        = 50,
+	Z_PLAYER        = 100;
+const int
+	SCORE_SAUCER    = 10;
+
+// define globals
 GFX gfx;
 Container scene;
 
-struct Score {
-	int score = 0;
 
-	void add(const string& target) {
-		if (target == "saucer")  score += 10;
-	}
+// -- GAME --
+
+struct Score {
+	int score = 0, multiplier = 1;
+	void add(int points) { score += points * multiplier; }
 } score;
 
 struct Explosion : Paintable {
 	struct Star { float x, y, dx, dy; };
 	vector<Star> stars;
+	int alpha = 255;
 
 	static void spawn(const Sprite& spr) {
 		scene.append(make_shared<Explosion>(spr.x + spr.width/2, spr.y + spr.height/2));
 	}
 
 	Explosion(int mx, int my) {
-		id = "explosion", x = mx, y = my, z = 100;
-
+		id = "explosion", x = mx, y = my, z = Z_EXPLOSION;
 		for (int i = 0; i < 20; i++) {
 			float rot = rand()%360, speed = ((rand()%3)+1)/2.0;
 			auto point = gfx.rot2point(rot, speed);
@@ -35,13 +45,15 @@ struct Explosion : Paintable {
 		}
 	}
 	virtual void update() {
+		if (alpha -= 5, alpha <= 0)
+			return id = "dead", alpha = 0, void();
 		for (auto& star : stars)
 			star.x += star.dx, star.y += star.dy;
 	}
 	virtual void paint(int xoff, int yoff) {
+		auto col = RED;  col.a = alpha;
 		for (const auto& star : stars)
-			DrawPixel(xoff+x+star.x, yoff+y+star.y, RED);
-		DrawPixel(xoff+x, yoff+y, GREEN);
+			DrawPixel(xoff+x+star.x, yoff+y+star.y, col);
 	}
 };
 
@@ -56,7 +68,7 @@ struct Bullets {
 		auto sprptr = make_shared<Sprite>();
 		auto& spr = *sprptr;
 		spr.id = "bullet";
-		spr.x = x, spr.y = y, spr.z = 100;
+		spr.x = x, spr.y = y, spr.z = Z_BULLET;
 		spr.source("sprites", 16, 0, 8, 8);
 		scene.append(sprptr);
 	}
@@ -72,7 +84,7 @@ struct Bullets {
 				if (p->id != "saucer")  continue;
 				auto& spr2 = *dynamic_pointer_cast<Sprite>(p);
 				if (spr.collide(spr2)) {
-					score.add(spr2.id);
+					score.add(SCORE_SAUCER);
 					spr.id = spr2.id = "dead";
 					Explosion::spawn(spr2);
 					goto next_bullet;
@@ -97,7 +109,7 @@ struct Enemys {
 		auto sprptr = make_shared<Sprite>();
 		auto& spr = *sprptr;
 		spr.id = "saucer";
-		spr.x = 80, spr.y = -16, spr.z = 10;
+		spr.x = 80, spr.y = -16, spr.z = Z_ENEMY;
 		spr.tsource("sprites", 16, 2);
 		scene.append(sprptr);
 	}
@@ -119,7 +131,7 @@ struct Stars : Paintable {
 	vector<Vector2> stars;
 
 	Stars() {
-		id = "stars", z = -100;
+		id = "stars", z = Z_STARS;
 		srand(100);
 		for (int i = 0; i < 50; i++)
 			stars.push_back({ float(rand() % screenw), float(rand() % screenh) });
@@ -146,11 +158,11 @@ void mainloop() {
 		ship.id = "ship";
 		ship.x = (screenw - ship.width) / 2;
 		ship.y = screenh - ship.height - 6;
+		ship.z = Z_PLAYER;
 		scene.append(shipptr);
 	float speed = 1.5;
 
 	auto starsptr = make_shared<Stars>();
-	// auto& stars = *starsptr;
 	scene.append(starsptr);
 
 	while (!gfx.shouldquit()) {
@@ -185,12 +197,6 @@ void mainloop() {
 
 int main() {
 	printf("starting Shmup2...\n");
-
-	// for (int i = 0; i < 4; i++) {
-	// 	auto r = 360.0/4*i;
-	// 	auto p = gfx.rot2point(r);
-	// 	printf("%f: %f %f\n", r, p.x, p.y);
-	// }
 
 	mainloop();
 }
