@@ -17,6 +17,34 @@ struct Score {
 	}
 } score;
 
+struct Explosion : Paintable {
+	struct Star { float x, y, dx, dy; };
+	vector<Star> stars;
+
+	static void spawn(const Sprite& spr) {
+		scene.append(make_shared<Explosion>(spr.x + spr.width/2, spr.y + spr.height/2));
+	}
+
+	Explosion(int mx, int my) {
+		id = "explosion", x = mx, y = my, z = 100;
+
+		for (int i = 0; i < 20; i++) {
+			float rot = rand()%360, speed = ((rand()%3)+1)/2.0;
+			auto point = gfx.rot2point(rot, speed);
+			stars.push_back({ 0, 0, point.x, point.y });
+		}
+	}
+	virtual void update() {
+		for (auto& star : stars)
+			star.x += star.dx, star.y += star.dy;
+	}
+	virtual void paint(int xoff, int yoff) {
+		for (const auto& star : stars)
+			DrawPixel(xoff+x+star.x, yoff+y+star.y, RED);
+		DrawPixel(xoff+x, yoff+y, GREEN);
+	}
+};
+
 struct Bullets {
 	const int COOLDOWN_MAX = 10;
 	const float SPEED = 2.0;
@@ -35,9 +63,10 @@ struct Bullets {
 
 	void update() {
 		cooldown = max(cooldown-1, 0);
-		for (auto p : scene.children) {
-			if (p->id != "bullet")  continue;
-			auto& spr = *dynamic_pointer_cast<Sprite>(p);
+		for (size_t i = 0; i < scene.children.size(); i++) {  // no iterator, since we are modifying scene.children
+			if (scene.children[i]->id != "bullet")  continue;
+			auto p = dynamic_pointer_cast<Sprite>(scene.children[i]);  // hold ptr
+			auto& spr = *p;
 			// check collision with enemy
 			for (auto p : scene.children) {
 				if (p->id != "saucer")  continue;
@@ -45,6 +74,7 @@ struct Bullets {
 				if (spr.collide(spr2)) {
 					score.add(spr2.id);
 					spr.id = spr2.id = "dead";
+					Explosion::spawn(spr2);
 					goto next_bullet;
 				}
 			}
@@ -53,7 +83,6 @@ struct Bullets {
 			if (spr.y <= -12)  spr.id = "dead";
 			next_bullet:
 		}
-		scene.remove("dead");
 	}
 } bullets;
 
@@ -82,7 +111,6 @@ struct Enemys {
 			spr.y += SPEED;
 			if (spr.y > screenh + 20)  spr.id = "dead";
 		}
-		scene.remove("dead");
 	}
 } enemys;
 
@@ -96,8 +124,7 @@ struct Stars : Paintable {
 		for (int i = 0; i < 50; i++)
 			stars.push_back({ float(rand() % screenw), float(rand() % screenh) });
 	}
-	// manual update - no updating in container
-	void update() {
+	virtual void update() {
 		for (auto& star : stars)
 			star.y = fmod(star.y + SPEED, screenh);
 	}
@@ -107,7 +134,7 @@ struct Stars : Paintable {
 	}
 };
 
-void buffertest2() {
+void mainloop() {
 	gfx.init(screenw*4, screenh*4);
 	gfx.resizable();
 	gfx.usebuffer(screenw, screenh);
@@ -123,8 +150,8 @@ void buffertest2() {
 	float speed = 1.5;
 
 	auto starsptr = make_shared<Stars>();
-	auto& stars = *starsptr;
-		scene.append(starsptr);
+	// auto& stars = *starsptr;
+	scene.append(starsptr);
 
 	while (!gfx.shouldquit()) {
 		ClearBackground(PAL_BLACK);
@@ -138,9 +165,12 @@ void buffertest2() {
 			bullets.shoot(ship.x+4, ship.y-9);
 
 		// move actors
-		stars.update();
 		bullets.update();
 		enemys.update();
+		// update scene
+		scene.update();
+		// bring out ya dead!
+		scene.remove("dead");
 
 		// draw
 		scene.paint(0, 0);
@@ -156,5 +186,11 @@ void buffertest2() {
 int main() {
 	printf("starting Shmup2...\n");
 
-	buffertest2();
+	// for (int i = 0; i < 4; i++) {
+	// 	auto r = 360.0/4*i;
+	// 	auto p = gfx.rot2point(r);
+	// 	printf("%f: %f %f\n", r, p.x, p.y);
+	// }
+
+	mainloop();
 }
