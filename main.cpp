@@ -1,6 +1,7 @@
 #include "gfxlib/gfx.hpp"
 #include <iostream>
 #include <cmath>
+#include <format>
 using namespace std;
 
 // define constants
@@ -24,8 +25,9 @@ shared_ptr<Sprite> shipptr;
 // -- GAME --
 
 struct Score {
-	int score = 0, multiplier = 1;
+	int score = 0, multiplier = 1, dist = 0;
 	void add(int points) { score += points * multiplier; }
+	void reset() { score = dist = 0, multiplier = 1; }
 } score;
 
 struct Explosion : Paintable {
@@ -154,7 +156,7 @@ struct Stars : Paintable {
 };
 
 void reset() {
-	score.score = 0;
+	score.reset();
 	auto& ship = *shipptr;
 	ship.id = "ship", ship.x = (screenw-ship.width)/2, ship.y = screenh-ship.height-6;
 	scene.children = { make_shared<Stars>(), shipptr };
@@ -176,6 +178,7 @@ void mainloop() {
 
 	while (!gfx.shouldquit()) {
 		ClearBackground(PAL_BLACK);
+		score.dist++;
 
 		// interface actions
 		if (IsKeyDown(KEY_R))
@@ -201,8 +204,11 @@ void mainloop() {
 		// draw
 		scene.paint(0, 0);
 		gfx.font.selected = 1;
-		gfx.print("score: "+to_string(score.score), 0, 0);
-		gfx.print("actors:"+to_string(scene.children.size()), 0, 8);
+		gfx.printm({
+			format("{}pt", score.score),
+			format("{:.2f}km", score.dist/1000.0f),
+			format("actors: {}",scene.children.size())
+		}, 0, 0);
 		gfx.flip();
 	}
 
