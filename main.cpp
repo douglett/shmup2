@@ -18,6 +18,7 @@ const int
 // define globals
 GFX gfx;
 Container scene;
+shared_ptr<Sprite> shipptr;
 
 
 // -- GAME --
@@ -116,11 +117,18 @@ struct Enemys {
 	void update() {
 		spawn();
 		cooldown = max(cooldown-1, 0);
-		for (auto p : scene.children) {
-			if (p->id != "saucer")  continue;
-			auto& spr = *dynamic_pointer_cast<Sprite>(p);
+		for (size_t i = 0; i < scene.children.size(); i++) {
+			if (scene.children[i]->id != "saucer")  continue;
+			auto& spr = *dynamic_pointer_cast<Sprite>(scene.children[i]);
+			// TODO: movement patterns
 			spr.y += SPEED;
-			if (spr.y > screenh + 20)  spr.id = "dead";
+			if (spr.y > screenh + 20)
+				spr.id = "dead";
+			else if (shipptr->id != "dead" && spr.collide(shipptr)) {
+				Explosion::spawn(spr);
+				Explosion::spawn(*shipptr);
+				spr.id = shipptr->id = "dead";
+			}
 		}
 	}
 } enemys;
@@ -145,35 +153,42 @@ struct Stars : Paintable {
 	}
 };
 
+void reset() {
+	score.score = 0;
+	auto& ship = *shipptr;
+	ship.id = "ship", ship.x = (screenw-ship.width)/2, ship.y = screenh-ship.height-6;
+	scene.children = { make_shared<Stars>(), shipptr };
+}
+
 void mainloop() {
 	gfx.init(screenw*4, screenh*4);
 	gfx.resizable();
 	gfx.usebuffer(screenw, screenh);
 	
 	gfx.loadtexture("sprites", "assets/sprites.png");
-	auto shipptr = make_shared<Sprite>();
+	shipptr = make_shared<Sprite>();
 	auto& ship = *shipptr;
 		ship.tsource("sprites", 16, 0);
-		ship.id = "ship";
-		ship.x = (screenw - ship.width) / 2;
-		ship.y = screenh - ship.height - 6;
-		ship.z = Z_PLAYER;
-		scene.append(shipptr);
+		ship.id = "ship", ship.z = Z_PLAYER;
 	float speed = 1.5;
 
-	auto starsptr = make_shared<Stars>();
-	scene.append(starsptr);
+	reset();
 
 	while (!gfx.shouldquit()) {
 		ClearBackground(PAL_BLACK);
 
+		// interface actions
+		if (IsKeyDown(KEY_R))
+			reset();
 		// move player
-		if (IsKeyDown(KEY_LEFT))
-			ship.x = max(ship.x-speed, 0.0f);
-		if (IsKeyDown(KEY_RIGHT))
-			ship.x = min(ship.x+speed, float(screenw-ship.width));
-		if (IsKeyDown(KEY_SPACE))
-			bullets.shoot(ship.x+4, ship.y-9);
+		if (ship.id != "dead") {
+			if (IsKeyDown(KEY_LEFT))
+				ship.x = max(ship.x-speed, 0.0f);
+			if (IsKeyDown(KEY_RIGHT))
+				ship.x = min(ship.x+speed, float(screenw-ship.width));
+			if (IsKeyDown(KEY_SPACE))
+				bullets.shoot(ship.x+4, ship.y-9);
+		}
 
 		// move actors
 		bullets.update();
