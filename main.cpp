@@ -83,7 +83,8 @@ struct Bullets {
 			auto& spr = *dynamic_pointer_cast<Sprite>(scene.children[i]);
 			// check collision with enemy
 			for (size_t j = 0; j < scene.children.size(); j++) {
-				if (scene.children[j]->id != "saucer")  continue;
+				auto& id = scene.children[j]->id;
+				if (!(id == "saucer" || id == "saucer:2"))  continue;
 				auto& spr2 = *dynamic_pointer_cast<Sprite>(scene.children[j]);
 				if (spr.collide(spr2)) {
 					score.add(SCORE_SAUCER);
@@ -134,6 +135,37 @@ struct Enemys {
 		}
 	}
 } enemys;
+
+struct Enemys2 {
+	const int COOLDOWN_MAX = 10;
+	const float SPEED = 1.0;
+	int cooldown = COOLDOWN_MAX;
+
+	void update() {
+		if (--cooldown > 0)  return;
+		cooldown = COOLDOWN_MAX;
+		scene.append(make_shared<Saucer2>());
+	}
+
+	struct Saucer2 : Sprite {
+		float dir = 90;
+		Saucer2() {
+			tsource("sprites", 16, 2);
+			id = "saucer:2", x = (screenw-width)/2, y = -height;
+		}
+		virtual void update() {
+			// move wobbling saucers
+			dir += 5;
+			auto pos = gfx.rot2point(dir);
+			x += pos.x*1.5, y += fabs(pos.y);
+			if (shipptr->id != "dead" && collide(shipptr)) {
+				Explosion::spawn(*this);
+				Explosion::spawn(*shipptr);
+				id = shipptr->id = "dead";
+			}
+		}
+	};
+} enemys2;
 
 struct Stars : Paintable {
 	const float SPEED = 0.5;
@@ -195,7 +227,8 @@ void mainloop() {
 
 		// move actors
 		bullets.update();
-		enemys.update();
+		// enemys.update();
+		enemys2.update();
 		// update scene
 		scene.update();
 		// bring out ya dead!
