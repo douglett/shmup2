@@ -102,43 +102,8 @@ struct Bullets {
 } bullets;
 
 struct Enemys {
-	const int COOLDOWN_MAX = 20;
-	const float SPEED = 1.0;
-	int cooldown = COOLDOWN_MAX;
-
-	void spawn() {
-		if (cooldown > 0)  return;
-		cooldown = COOLDOWN_MAX;
-		auto sprptr = make_shared<Sprite>();
-		auto& spr = *sprptr;
-		spr.id = "saucer";
-		spr.x = 80, spr.y = -16, spr.z = Z_ENEMY;
-		spr.tsource("sprites", 16, 2);
-		scene.append(sprptr);
-	}
-
-	void update() {
-		spawn();
-		cooldown = max(cooldown-1, 0);
-		for (size_t i = 0; i < scene.children.size(); i++) {
-			if (scene.children[i]->id != "saucer")  continue;
-			auto& spr = *dynamic_pointer_cast<Sprite>(scene.children[i]);
-			// TODO: movement patterns
-			spr.y += SPEED;
-			if (spr.y > screenh + 20)
-				spr.id = "dead";
-			else if (shipptr->id != "dead" && spr.collide(shipptr)) {
-				Explosion::spawn(spr);
-				Explosion::spawn(*shipptr);
-				spr.id = shipptr->id = "dead";
-			}
-		}
-	}
-} enemys;
-
-struct Enemys2 {
-	const int COOLDOWN_MAX = 10;
-	const float SPEED = 1.0;
+	inline const static float SPEED = 1.0;
+	const static int COOLDOWN_MAX = 10;
 	int cooldown = COOLDOWN_MAX;
 
 	void update() {
@@ -147,25 +112,41 @@ struct Enemys2 {
 		scene.append(make_shared<Saucer2>());
 	}
 
-	struct Saucer2 : Sprite {
-		float dir = 90;
-		Saucer2() {
+	// Straight-Down Saucers
+	struct Saucer : Sprite {
+		Saucer() {
 			tsource("sprites", 16, 2);
-			id = "saucer:2", x = (screenw-width)/2, y = -height;
+			id = "saucer", x = (screenw-width)/2, y = -height;
 		}
 		virtual void update() {
-			// move wobbling saucers
-			dir += 5;
-			auto pos = gfx.rot2point(dir);
-			x += pos.x*1.5, y += fabs(pos.y);
-			if (shipptr->id != "dead" && collide(shipptr)) {
+			y += SPEED;
+			checkdead();
+		}
+		virtual void checkdead() {
+			if (y > screenh + 20)
+				id = "dead";
+			else if (shipptr->id != "dead" && collide(shipptr)) {
 				Explosion::spawn(*this);
 				Explosion::spawn(*shipptr);
 				id = shipptr->id = "dead";
 			}
 		}
 	};
-} enemys2;
+
+	// Wobbling Saucers
+	struct Saucer2 : Saucer {
+		float dir = 90;
+		Saucer2() : Saucer() {
+			id = "saucer:2";
+		}
+		virtual void update() {
+			dir += 5;
+			auto pos = gfx.rot2point(dir, SPEED);
+			x += pos.x*1.5, y += fabs(pos.y);
+			checkdead();
+		}
+	};
+} enemys;
 
 struct Stars : Paintable {
 	const float SPEED = 0.5;
@@ -227,8 +208,7 @@ void mainloop() {
 
 		// move actors
 		bullets.update();
-		// enemys.update();
-		enemys2.update();
+		enemys.update();
 		// update scene
 		scene.update();
 		// bring out ya dead!
