@@ -78,25 +78,27 @@ struct Bullets {
 
 	void update() {
 		cooldown = max(cooldown-1, 0);
-		for (size_t i = 0; i < scene.children.size(); i++) {  // no iterator, since we are modifying scene.children
-			if (scene.children[i]->id != "bullet")  continue;
-			auto& spr = *dynamic_pointer_cast<Sprite>(scene.children[i]);
+		auto snapshot = scene.snapshot();
+		for (auto p : snapshot) {
+			if (p->id != "bullet")  continue;
+			auto& spr = *dynamic_pointer_cast<Sprite>(p);
+			// move
+			spr.y -= SPEED;
+			if (spr.y <= -12) {
+				spr.id = "dead";
+				continue;
+			}
 			// check collision with enemy
-			for (size_t j = 0; j < scene.children.size(); j++) {
-				auto& id = scene.children[j]->id;
-				if (!(id == "saucer" || id == "saucer:2"))  continue;
-				auto& spr2 = *dynamic_pointer_cast<Sprite>(scene.children[j]);
+			for (auto p : snapshot) {
+				if (!(p->id == "saucer" || p->id == "saucer:2"))  continue;
+				auto& spr2 = *dynamic_pointer_cast<Sprite>(p);
 				if (spr.collide(spr2)) {
 					score.add(SCORE_SAUCER);
 					spr.id = spr2.id = "dead";
 					Explosion::spawn(spr2);
-					goto next_bullet;
+					break;
 				}
 			}
-			// move
-			spr.y -= SPEED;
-			if (spr.y <= -12)  spr.id = "dead";
-			next_bullet:
 		}
 	}
 } bullets;
