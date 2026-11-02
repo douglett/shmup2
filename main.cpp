@@ -111,7 +111,7 @@ struct Enemys {
 	void update() {
 		if (--cooldown > 0)  return;
 		cooldown = COOLDOWN_MAX;
-		scene.append(make_shared<Saucer3>());
+		scene.append(make_shared<Saucer4>());
 	}
 
 	// Straight-Down Saucers
@@ -149,7 +149,7 @@ struct Enemys {
 		}
 	};
 
-	// Box-Out Saucers
+	// Drop-box-out Saucers
 	struct Saucer3 : Saucer {
 		int state = 0;
 		Saucer3() : Saucer() {
@@ -163,6 +163,31 @@ struct Enemys {
 			} else if (state == 1) {
 				x += SPEED;
 				if (x >= screenw - 30 - width)  state++;
+			} else {
+				y -= SPEED;
+				if (y < -20)  id = "dead";
+			}
+			checkdead();
+		}
+	};
+
+	// Drop-curve-out Saucers
+	struct Saucer4 : Saucer {
+		int state = 0;
+		float dir = 180;
+		Saucer4() : Saucer() {
+			x = 30;
+			id = "saucer:4";
+		}
+		virtual void update() {
+			if (state == 0) {
+				y += SPEED;
+				if (y >= screenh - 70)  state++;
+			} else if (state == 1) {
+				dir -= 1.5;
+				auto pos = gfx.rot2point(dir, SPEED);
+				x += pos.x, y += pos.y;
+				if (dir <= 0)  state++;
 			} else {
 				y -= SPEED;
 				if (y < -20)  id = "dead";
