@@ -90,7 +90,7 @@ struct Bullets {
 			}
 			// check collision with enemy
 			for (auto p : snapshot) {
-				if (!(p->id == "saucer" || p->id == "saucer:2"))  continue;
+				if (p->id.substr(0, 6) != "saucer")  continue;
 				auto& spr2 = *dynamic_pointer_cast<Sprite>(p);
 				if (spr.collide(spr2)) {
 					score.add(SCORE_SAUCER);
@@ -111,7 +111,7 @@ struct Enemys {
 	void update() {
 		if (--cooldown > 0)  return;
 		cooldown = COOLDOWN_MAX;
-		scene.append(make_shared<Saucer2>());
+		scene.append(make_shared<Saucer3>());
 	}
 
 	// Straight-Down Saucers
@@ -145,6 +145,28 @@ struct Enemys {
 			dir += 5;
 			auto pos = gfx.rot2point(dir, SPEED);
 			x += pos.x*1.5, y += fabs(pos.y);
+			checkdead();
+		}
+	};
+
+	// Box-Out Saucers
+	struct Saucer3 : Saucer {
+		int state = 0;
+		Saucer3() : Saucer() {
+			x = 30;
+			id = "saucer:3";
+		}
+		virtual void update() {
+			if (state == 0) {
+				y += SPEED;
+				if (y >= screenh - 30)  state++;
+			} else if (state == 1) {
+				x += SPEED;
+				if (x >= screenw - 30 - width)  state++;
+			} else {
+				y -= SPEED;
+				if (y < -20)  id = "dead";
+			}
 			checkdead();
 		}
 	};
